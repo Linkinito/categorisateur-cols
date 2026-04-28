@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catégorisateur de cols — Linkinito</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e10;--card:#18181b;--card2:#212124;--border:rgba(255,255,255,.09);
+  --text:#f0f0f0;--muted:#666;--accent:#F7C800;
+  --red:#d64d4d;--green:#4dc88a;
+  --chc-bg:#3a2600;--chc-t:#F7C800;
+  --c1c-bg:#3a1500;--c1c-t:#F5A050;
+  --c2c-bg:#001830;--c2c-t:#6BB8F0;
+  --c3c-bg:#001e15;--c3c-t:#4DC89A;
+  --c4c-bg:#0a1e00;--c4c-t:#7EC84A;
+  --cnc-bg:#222224;--cnc-t:#666;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding:28px 16px 60px}
+.wrap{max-width:760px;margin:0 auto}
+
+/* Header */
+.hdr h1{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:3px;color:var(--accent);line-height:1;margin-bottom:3px}
+.hdr p{font-size:13px;color:var(--muted);margin-bottom:22px}
+
+/* Layout */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:580px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px}
+.ctitle{font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+
+/* Param rows */
+.param{margin-bottom:18px}
+.param:last-of-type{margin-bottom:0}
+.param-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.param-lbl{font-size:14px}
+
+/* Spin group (custom +/-) */
+.spin-g{display:flex;align-items:center;gap:3px}
+.spin-g input[type=number]{
+  width:56px;text-align:center;
+  background:var(--card2);border:1px solid var(--border);border-radius:7px;
+  color:var(--text);font-size:14px;font-weight:500;font-family:'DM Sans',sans-serif;
+  padding:4px 4px;outline:none;transition:border-color .15s
+}
+.spin-g input[type=number]:focus{border-color:var(--accent)}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+input[type=number]{-moz-appearance:textfield}
+.spin-btn{
+  width:20px;height:20px;border-radius:5px;
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--muted);font-size:14px;line-height:1;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .15s,border-color .15s;flex-shrink:0
+}
+.spin-btn:hover{color:var(--text);border-color:var(--accent)}
+.spin-g .u{font-size:12px;color:var(--muted);margin-left:2px}
+
+/* Range slider */
+input[type=range]{
+  -webkit-appearance:none;appearance:none;
+  display:block;width:100%;height:4px;
+  background:var(--border);border-radius:2px;outline:none;cursor:pointer;margin:0
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);cursor:pointer;transition:transform .15s
+}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);border:none;cursor:pointer}
+.rlimits{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px}
+.anote{font-size:11px;color:var(--muted);margin-top:5px;min-height:1.4em}
+
+/* Toggle */
+.tog{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:18px;border-top:1px solid var(--border)}
+.sw{position:relative;display:inline-block;width:46px;height:26px}
+.sw input{display:none}
+.sw-s{position:absolute;inset:0;background:#333;border-radius:13px;cursor:pointer;transition:background .2s}
+.sw input:checked+.sw-s{background:var(--accent)}
+.sw-s::before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#111;border-radius:50%;transition:transform .2s}
+.sw input:checked+.sw-s::before{transform:translateX(20px)}
+
+/* Result card */
+.res{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;display:flex;flex-direction:column}
+.cat-area{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:.4rem 0}
+.cat-big{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;letter-spacing:3px;transition:color .3s}
+.cat-badge{display:inline-block;padding:5px 14px;border-radius:7px;font-size:12px;font-weight:500;margin:.3rem 0;transition:background .3s,color .3s}
+.cat-note{font-size:11px;color:var(--muted);min-height:2.6em;max-width:220px;line-height:1.5}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.metric{background:var(--card2);border-radius:8px;padding:10px 12px}
+.ml{font-size:10px;color:var(--muted);letter-spacing:.03em;margin-bottom:3px}
+.mv{font-size:16px;font-weight:500}
+
+/* Seuils panel */
+.seuils{margin-top:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.seuils-hdr{display:flex;align-items:center;gap:10px;padding:14px 20px;cursor:pointer;user-select:none;font-size:13px;color:var(--muted);transition:color .15s}
+.seuils-hdr:hover{color:var(--text)}
+.sarr{transition:transform .2s;font-size:11px}
+.sarr.open{transform:rotate(90deg)}
+.seuils-body{display:none;padding:0 20px 22px}
+.seuils-body.open{display:block}
+
+/* Sub-sections inside seuils */
+.ss{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.ss:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.ss-title{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+/* Seuils table */
+table.stt{width:100%;border-collapse:collapse;font-size:13px}
+table.stt th{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:0 6px 9px;text-align:left;border-bottom:1px solid var(--border)}
+table.stt td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:middle}
+table.stt tr:last-child td{border-bottom:none}
+.sbadge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500}
+.td-spin input[type=number]{width:68px;font-size:13px;padding:4px 5px}
+.td-spin .spin-btn{width:18px;height:18px;font-size:12px}
+.err-row td .td-spin input[type=number]{border-color:var(--red)}
+.err-msg{font-size:10px;color:var(--red);margin-top:3px}
+
+/* Global scale rows */
+.scale-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.scale-row:last-of-type{margin-bottom:0}
+.scale-lbl{font-size:13px;color:var(--text);min-width:110px;flex-shrink:0}
+.scale-row input[type=range]{flex:1}
+.scale-val{font-size:13px;font-weight:500;min-width:38px;text-align:right;color:var(--accent)}
+
+/* Bonus rows */
+.bonus-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.bonus-row:last-child{margin-bottom:0}
+.bonus-lbl{font-size:13px;color:var(--muted);white-space:nowrap}
+.bonus-row .spin-g input[type=number]{width:60px}
+
+/* Reset button */
+.btn-reset{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:14px;padding:7px 14px;border-radius:8px;
+  background:var(--card2);border:1px solid var(--border);
+  color:var(--muted);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:color .15s,border-color .15s
+}
+.btn-reset:hover{color:var(--text);border-color:var(--accent)}
+
+.footer{text-align:center;font-size:11px;color:var(--muted);margin-top:28px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <h1>Catégorisateur de cols</h1>
+    <p>Tour de France &amp; autres épreuves · Modèle Linkinito</p>
+  </div>
+
+  <div class="grid">
+    <!-- PARAMÈTRES -->
+    <div class="card">
+      <p class="ctitle">Paramètres du col</p>
+
+      <div class="param">
+        <div class="param-hdr">
+          <span class="param-lbl">Longueur</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adj('ln',-.1,'l',1)">−</button>
+            <input type="number" id="ln" min="0.1" max="200" step="0.1" value="10" oninput="onNum('ln','l',1)">
+            <button class="spin-btn" onclick="adj('ln',.1,'l',1)">+</button>
+            <span class="u">km</span>
+          </div>
+        </div>
+        <input type="range" id="l" min="0.5" max="30" step="0.1" value="10" oninput="onSlide('l','ln',1)">
+        <div class="rlimits"><span>0,5 km</span><span>30 km</span></div>
+      </div>
+
+      <div class="param">
+        <div class="param-hdr">
+          <span class="param-lbl">Pente moyenne</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adj('pn',-.1,'p',1)">−</button>
+            <input type="number" id="pn" min="0.5" max="30" step="0.1" value="7" oninput="onNum('pn','p',1)">
+            <button class="spin-btn" onclick="adj('pn',.1,'p',1)">+</button>
+            <span class="u">%</span>
+          </div>
+        </div>
+        <input type="range" id="p" min="3" max="15" step="0.1" value="7" oninput="onSlide('p','pn',1)">
+        <div class="rlimits"><span>3 %</span><span>15 %</span></div>
+      </div>
+
+      <div class="param">
+        <div class="param-hdr">
+          <span class="param-lbl">Altitude du sommet</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adjAlt(-.10)">−</button>
+            <input type="number" id="an" min="0" max="9000" step="10" value="1800" oninput="onNumAlt()">
+            <button class="spin-btn" onclick="adjAlt(.10)">+</button>
+            <span class="u">m</span>
+          </div>
+        </div>
+        <input type="range" id="a" min="0" max="3000" step="10" value="1800" oninput="onSlideAlt()">
+        <div class="rlimits"><span id="aminlbl">0 m</span><span>3 000 m</span></div>
+        <p class="anote" id="anote"></p>
+      </div>
+
+      <div class="tog">
+        <span style="font-size:14px">Arrivée au sommet</span>
+        <label class="sw"><input type="checkbox" id="arr" onchange="updateUI()"><span class="sw-s"></span></label>
+      </div>
+    </div>
+
+    <!-- RÉSULTATS -->
+    <div class="res">
+      <p class="ctitle">Catégorie estimée</p>
+      <div class="cat-area">
+        <div class="cat-big" id="bigc" style="color:var(--cnc-t)">NC</div>
+        <span class="cat-badge" id="clab" style="background:var(--cnc-bg);color:var(--cnc-t)">Non catégorisé</span>
+        <p class="cat-note" id="cnote"></p>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="ml">Vitesse estimée</div><div class="mv" id="mvit">—</div></div>
+        <div class="metric"><div class="ml">Temps d'ascension</div><div class="mv" id="mtps">—</div></div>
+        <div class="metric"><div class="ml">C² brute</div><div class="mv" id="mc2b">—</div></div>
+        <div class="metric"><div class="ml">C² corrigée</div><div class="mv" id="mc2c">—</div></div>
+        <div class="metric"><div class="ml">Bonus altitude</div><div class="mv" id="malt">—</div></div>
+        <div class="metric"><div class="ml">Bonus arrivée</div><div class="mv" id="marr">—</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEUILS -->
+  <div class="seuils">
+    <div class="seuils-hdr" onclick="toggleSt()">
+      <span class="sarr" id="sarr">▸</span>
+      <span>Modifier les seuils et les paramètres</span>
+    </div>
+    <div class="seuils-body" id="stbl">
+
+      <!-- Table des seuils par catégorie -->
+      <div class="ss">
+        <p class="ss-title">Seuils par catégorie</p>
+        <table class="stt">
+          <thead><tr><th>Catégorie</th><th>Limite min. C²</th><th>Temps étalon (min)</th></tr></thead>
+          <tbody id="stbody"></tbody>
+        </table>
+        <p id="seuil-err" style="font-size:11px;color:var(--red);margin-top:8px;min-height:1em"></p>
+      </div>
+
+      <!-- Ajustement global par multiplicateur -->
+      <div class="ss">
+        <p class="ss-title">Ajustement global proportionnel</p>
+        <div class="scale-row">
+          <span class="scale-lbl">Seuils C²</span>
+          <input type="range" id="c2scale" min="0.25" max="4" step="0.05" value="1" oninput="onC2Scale()">
+          <span class="scale-val" id="c2scalev">×1,00</span>
+        </div>
+        <div class="scale-row">
+          <span class="scale-lbl">Temps étalons</span>
+          <input type="range" id="etscale" min="0.25" max="4" step="0.05" value="1" oninput="onEtScale()">
+          <span class="scale-val" id="etscalev">×1,00</span>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin-top:10px">Multiplie tous les seuils proportionnellement en conservant les rapports entre catégories.</p>
+      </div>
+
+      <!-- Bonus altitude -->
+      <div class="ss">
+        <p class="ss-title">Bonus d'altitude</p>
+        <div class="bonus-row">
+          <span class="bonus-lbl">Gain :</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adjB('altGain',-.1,0.1,5)">−</button>
+            <input type="number" id="altGain" min="0.1" max="5" step="0.1" value="1" oninput="updateUI()">
+            <button class="spin-btn" onclick="adjB('altGain',.1,0.1,5)">+</button>
+            <span class="u">%</span>
+          </div>
+          <span class="bonus-lbl">tous les</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adjB('altInterval',-10,50,200)">−</button>
+            <input type="number" id="altInterval" min="50" max="200" step="10" value="100" oninput="updateUI()">
+            <button class="spin-btn" onclick="adjB('altInterval',10,50,200)">+</button>
+            <span class="u">m</span>
+          </div>
+          <span class="bonus-lbl">au-dessus de</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adjB('altMinB',-50,500,2000)">−</button>
+            <input type="number" id="altMinB" min="500" max="2000" step="50" value="1000" oninput="updateUI()">
+            <button class="spin-btn" onclick="adjB('altMinB',50,500,2000)">+</button>
+            <span class="u">m</span>
+          </div>
+        </div>
+        <p id="alt-bonus-preview" style="font-size:11px;color:var(--muted);margin-top:6px"></p>
+      </div>
+
+      <!-- Bonus arrivée -->
+      <div class="ss">
+        <p class="ss-title">Bonus arrivée au sommet</p>
+        <div class="bonus-row">
+          <span class="bonus-lbl">Bonus :</span>
+          <div class="spin-g">
+            <button class="spin-btn" onclick="adjB('arrBonus',-1,3,20)">−</button>
+            <input type="number" id="arrBonus" min="3" max="20" step="1" value="10" oninput="updateUI()">
+            <button class="spin-btn" onclick="adjB('arrBonus',1,3,20)">+</button>
+            <span class="u">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="ss">
+        <p class="ss-title">Réinitialisation</p>
+        <button class="btn-reset" onclick="resetAll()">↺ Revenir aux valeurs par défaut</button>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="footer">Catégorisateur de cols · Modèle logarithmique Linkinito</p>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────────────────
+var DEFAULTS = [
+  {nom:'HC', label:'Hors Catégorie',  limite:720, etalon:40},
+  {nom:'1C', label:'1ère Catégorie',  limite:360, etalon:24},
+  {nom:'2C', label:'2ème Catégorie',  limite:180, etalon:12},
+  {nom:'3C', label:'3ème Catégorie',  limite:90,  etalon:6},
+  {nom:'4C', label:'4ème Catégorie',  limite:15,  etalon:3},
+];
+var DEFAULT_ALT_GAIN = 1, DEFAULT_ALT_INTERVAL = 100, DEFAULT_ALT_MIN = 1000;
+var DEFAULT_ARR_BONUS = 10;
+
+var cats = DEFAULTS.map(function(c){return Object.assign({},c);});
+var c2ScaleVal = 1.0, etScaleVal = 1.0;
+
+var catV = {
+  HC:  {bg:'var(--chc-bg)', t:'var(--chc-t)'},
+  '1C':{bg:'var(--c1c-bg)', t:'var(--c1c-t)'},
+  '2C':{bg:'var(--c2c-bg)', t:'var(--c2c-t)'},
+  '3C':{bg:'var(--c3c-bg)', t:'var(--c3c-t)'},
+  '4C':{bg:'var(--c4c-bg)', t:'var(--c4c-t)'},
+  NC:  {bg:'var(--cnc-bg)', t:'var(--cnc-t)'},
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function el(id){return document.getElementById(id);}
+function gv(id){return parseFloat(el(id).value);}
+function clamp(v,a,b){return Math.min(Math.max(v,a),b);}
+function fmtTime(tps){var s=Math.round(tps*60),m=Math.floor(s/60);s=s%60;return m+'min '+(s<10?'0':'')+s+'s';}
+function fmtMult(v){return '×'+v.toFixed(2).replace('.',',');}
+
+// ─── Slider ↔ Number sync ────────────────────────────────────────────────────
+function onSlide(sid,nid,dec){
+  el(nid).value = parseFloat(el(sid).value).toFixed(dec);
+  updateUI();
+}
+function onNum(nid,sid,dec){
+  var v=parseFloat(el(nid).value);
+  if(!isNaN(v)) el(sid).value = clamp(v, parseFloat(el(sid).min), parseFloat(el(sid).max));
+  updateUI();
+}
+function adj(nid,step,sid,dec){
+  var cur=parseFloat(el(nid).value)||0;
+  var nv=parseFloat((cur+step).toFixed(dec));
+  el(nid).value=nv;
+  onNum(nid,sid,dec);
+}
+
+// ─── Altitude ────────────────────────────────────────────────────────────────
+function getAltMin(){
+  var lon=gv('ln'), pen=gv('pn');
+  return Math.ceil(lon*(pen/100)*1000/10)*10;
+}
+function updateAltMin(){
+  var minA=getAltMin();
+  el('a').min = minA;
+  el('an').min = minA;
+  el('aminlbl').textContent = minA.toLocaleString('fr-FR')+'\u202fm';
+  if(gv('an') < minA){
+    el('an').value = minA;
+    el('a').value  = Math.min(minA, 3000);
+  }
+}
+function onSlideAlt(){
+  el('an').value = Math.round(parseFloat(el('a').value)/10)*10;
+  updateUI();
+}
+function onNumAlt(){
+  var v=parseFloat(el('an').value);
+  if(!isNaN(v)){
+    var minA=getAltMin();
+    var clamped=Math.max(v,minA);
+    el('an').value=clamped;
+    el('a').value=Math.min(clamped,3000);
+  }
+  updateUI();
+}
+function adjAlt(step){
+  var cur=parseFloat(el('an').value)||0;
+  var minA=getAltMin();
+  var nv=Math.max(Math.round((cur+step*100)/10)*10, minA);
+  el('an').value=nv;
+  el('a').value=Math.min(nv,3000);
+  updateUI();
+}
+// Override adj for altitude: step is 10m per click from ±100m button ⇒ step=10
+function adjAlt(delta){
+  var cur=parseFloat(el('an').value)||0;
+  var minA=getAltMin();
+  var nv=Math.max(cur+delta,minA);
+  el('an').value=nv;
+  el('a').value=Math.min(nv,3000);
+  updateUI();
+}
+
+// ─── Bonus fields adj ────────────────────────────────────────────────────────
+function adjB(id, step, mn, mx){
+  var v=parseFloat(el(id).value)||0;
+  var nv=parseFloat((v+step).toFixed(4));
+  el(id).value=clamp(nv,mn,mx);
+  updateUI();
+}
+
+// ─── Global scale sliders ────────────────────────────────────────────────────
+function onC2Scale(){
+  var newScale = parseFloat(el('c2scale').value);
+  var ratio = newScale / c2ScaleVal;
+  cats.forEach(function(c){c.limite = Math.round(c.limite * ratio);});
+  c2ScaleVal = newScale;
+  el('c2scalev').textContent = fmtMult(newScale);
+  refreshSeuilTable();
+  updateUI();
+}
+function onEtScale(){
+  var newScale = parseFloat(el('etscale').value);
+  var ratio = newScale / etScaleVal;
+  cats.forEach(function(c){c.etalon = parseFloat((c.etalon * ratio).toFixed(2));});
+  etScaleVal = newScale;
+  el('etscalev').textContent = fmtMult(newScale);
+  refreshSeuilTable();
+  updateUI();
+}
+
+// ─── Seuil table ─────────────────────────────────────────────────────────────
+function validateSeuils(){
+  // cats[0]=HC highest, cats[4]=4C lowest
+  var ok=true, msgs=[];
+  for(var i=0;i<cats.length-1;i++){
+    if(cats[i].limite<=cats[i+1].limite){
+      ok=false;
+      msgs.push('Le seuil '+cats[i].nom+' ('+Math.round(cats[i].limite)+') doit être supérieur à '+cats[i+1].nom+' ('+Math.round(cats[i+1].limite)+')');
+    }
+  }
+  el('seuil-err').textContent=msgs.join(' · ');
+  return ok;
+}
+
+function buildSeuilTable(){
+  var tb=el('stbody'); tb.innerHTML='';
+  cats.forEach(function(cat,i){
+    var c=catV[cat.nom]||catV.NC;
+    var tr=document.createElement('tr'); tr.id='str-'+i;
+    tr.innerHTML=
+      '<td><span class="sbadge" style="background:'+c.bg+';color:'+c.t+'">'+cat.nom+' — '+cat.label+'</span></td>'
+      +'<td class="td-spin">'
+        +'<div class="spin-g">'
+          +'<button class="spin-btn" onclick="adjSeuil('+i+',\'limite\',-1)">−</button>'
+          +'<input type="number" id="sl-'+i+'-l" value="'+Math.round(cat.limite)+'" min="0" step="1" oninput="onSeuilInput('+i+',\'limite\',this.value)">'
+          +'<button class="spin-btn" onclick="adjSeuil('+i+',\'limite\',1)">+</button>'
+        +'</div>'
+      +'</td>'
+      +'<td class="td-spin">'
+        +'<div class="spin-g">'
+          +'<button class="spin-btn" onclick="adjSeuil('+i+',\'etalon\',-0.5)">−</button>'
+          +'<input type="number" id="sl-'+i+'-e" value="'+cat.etalon+'" min="0" step="0.5" oninput="onSeuilInput('+i+',\'etalon\',this.value)">'
+          +'<button class="spin-btn" onclick="adjSeuil('+i+',\'etalon\',0.5)">+</button>'
+        +'</div>'
+      +'</td>';
+    tb.appendChild(tr);
+  });
+}
+
+function refreshSeuilTable(){
+  cats.forEach(function(cat,i){
+    var li=el('sl-'+i+'-l'), et=el('sl-'+i+'-e');
+    if(li) li.value=Math.round(cat.limite);
+    if(et) et.value=cat.etalon;
+  });
+}
+
+function onSeuilInput(i, field, val){
+  var v=parseFloat(val);
+  if(isNaN(v)) return;
+  cats[i][field]=v;
+  validateSeuils();
+  updateUI();
+}
+function adjSeuil(i, field, step){
+  var cur=cats[i][field];
+  var nv=parseFloat((cur+step).toFixed(4));
+  if(nv<0) return;
+  cats[i][field]=nv;
+  var inp=el('sl-'+i+'-'+field.charAt(0));
+  if(inp) inp.value=field==='limite'?Math.round(nv):nv;
+  validateSeuils();
+  updateUI();
+}
+
+// ─── Reset ───────────────────────────────────────────────────────────────────
+function resetAll(){
+  cats = DEFAULTS.map(function(c){return Object.assign({},c);});
+  c2ScaleVal=1; etScaleVal=1;
+  el('c2scale').value=1; el('c2scalev').textContent='×1,00';
+  el('etscale').value=1; el('etscalev').textContent='×1,00';
+  el('altGain').value=DEFAULT_ALT_GAIN;
+  el('altInterval').value=DEFAULT_ALT_INTERVAL;
+  el('altMinB').value=DEFAULT_ALT_MIN;
+  el('arrBonus').value=DEFAULT_ARR_BONUS;
+  el('seuil-err').textContent='';
+  refreshSeuilTable();
+  updateUI();
+}
+
+// ─── Toggle panel ─────────────────────────────────────────────────────────────
+function toggleSt(){
+  var b=el('stbl'), a=el('sarr');
+  var open=b.classList.toggle('open');
+  a.classList.toggle('open',open);
+  a.textContent=open?'▾':'▸';
+}
+
+// ─── Main calc + UI ───────────────────────────────────────────────────────────
+function updateUI(){
+  updateAltMin();
+
+  var lon=gv('ln'), pen=gv('pn'), alt=gv('an'), arr=el('arr').checked;
+
+  // Note altitude
+  var dp=Math.round(lon*(pen/100)*1000);
+  var pied=alt-dp;
+  el('anote').textContent=pied>=0
+    ?'Pied estimé à '+pied.toLocaleString('fr-FR')+'\u202fm (D+ ≈ '+dp.toLocaleString('fr-FR')+'\u202fm)'
+    :'Altitude insuffisante pour ce dénivelé';
+
+  // Calc
+  var vit=-15*Math.log(pen)+50;
+  var tps=(lon/vit)*60;
+  var c2=lon*pen*pen;
+
+  // Bonus altitude (configurable)
+  var altGain=parseFloat(el('altGain').value)||1;
+  var altInterval=parseFloat(el('altInterval').value)||100;
+  var altMinB=parseFloat(el('altMinB').value)||1000;
+  var abv=alt>altMinB ? 1+(alt-altMinB)*(altGain/100)/altInterval : 1;
+
+  // Bonus arrivée (configurable)
+  var arrBonusPct=parseFloat(el('arrBonus').value)||10;
+  var arb=arr ? 1+arrBonusPct/100 : 1.0;
+
+  var c2c=c2*abv*arb;
+
+  // Bonus altitude preview
+  el('alt-bonus-preview').textContent=
+    'Exemple : 2 000 m → +'
+    +(alt>altMinB?(((2000-altMinB)*(altGain/100)/altInterval)*100).toFixed(2):((2000>altMinB)?((2000-altMinB)*(altGain/100)/altInterval*100).toFixed(2):'0'))
+    +'% | 3 000 m → +'
+    +(((Math.max(3000,altMinB)-altMinB)*(altGain/100)/altInterval*100)).toFixed(2)+'%';
+
+  // Categorize
+  var sorted=[].concat(cats).sort(function(a,b){return b.limite-a.limite;});
+  var bi=-1;
+  for(var i=0;i<sorted.length;i++){if(c2c>=sorted[i].limite){bi=i;break;}}
+  var catFinal='NC', catBase=null, note='';
+  if(bi>=0){
+    catBase=sorted[bi];
+    if(tps>=catBase.etalon){catFinal=catBase.nom;}
+    else{
+      var ratio=catBase.etalon/tps, c2n=catBase.limite*ratio;
+      if(c2c>=c2n){catFinal=catBase.nom;}
+      else{
+        var nxt=bi+1<sorted.length?sorted[bi+1]:null;
+        catFinal=nxt?nxt.nom:'NC';
+        note='Trop court pour '+catBase.nom+' — seuil ajusté : '+Math.round(c2n)+' vs C²corr : '+Math.round(c2c);
+      }
+    }
+  }
+
+  // Display
+  var cv=catV[catFinal]||catV.NC;
+  var allC=cats.concat([{nom:'NC',label:'Non catégorisé'}]);
+  var cd=allC.find(function(c){return c.nom===catFinal;})||{label:'Non catégorisé'};
+  el('bigc').textContent=catFinal; el('bigc').style.color=cv.t;
+  el('clab').textContent=cd.label; el('clab').style.background=cv.bg; el('clab').style.color=cv.t;
+  el('cnote').textContent=note;
+  el('mvit').textContent=vit.toFixed(1)+' km/h';
+  el('mtps').textContent=fmtTime(tps);
+  el('mc2b').textContent=Math.round(c2);
+  el('mc2c').textContent=Math.round(c2c);
+  var ap=((abv-1)*100);
+  el('malt').textContent=ap>0.001?'+'+ap.toFixed(2)+'%':'+0 %';
+  el('marr').textContent=arr?'+'+(arrBonusPct)+'% (sommet)':'+0 %';
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+buildSeuilTable();
+updateUI();
+</script>
+</body>
+</html>
